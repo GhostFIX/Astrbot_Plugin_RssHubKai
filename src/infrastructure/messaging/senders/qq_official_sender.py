@@ -9,6 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from astrbot.core.star.star_tools import StarTools
+
 from ....shared.constants import (
     QQ_OFFICIAL_DEGRADE_STRATEGY_FAIL,
     QQ_OFFICIAL_DEGRADE_STRATEGY_FILE_THEN_LINK,
@@ -17,11 +19,14 @@ from ....shared.constants import (
     QQ_OFFICIAL_MARKDOWN_MODE_OPTIONS,
 )
 from ...pipeline import MessageComponent
+from ...utils import get_logger
 from .base_sender import DefaultMessageSender
 from .types import MessageContext, SendRequest, SendResult
 
 if TYPE_CHECKING:
     pass
+
+logger = get_logger()
 
 
 class QQOfficialMessageSender(DefaultMessageSender):
@@ -32,6 +37,69 @@ class QQOfficialMessageSender(DefaultMessageSender):
     - 组件排序由 MessageFormatter 统一
     - 多媒体消息按媒体优先、文本最后拆分发送
     """
+
+    async def _send_chain(
+        self,
+        session_id: str,
+        chain: list,
+        *,
+        use_markdown: bool | None = None,
+    ):
+        """发送前把 QQ 官方群会话标记为 group，允许主动推送。
+
+        AstrBot 的 QQ 官方适配器只有在 ``_session_scene`` 已知为 group 时，
+        才允许没有缓存 msg_id 的群主动消息；纯 WebUI 创建的订阅没有入站
+        消息可学习 scene，这里按会话类型补标记。
+
+        Args:
+            session_id: AstrBot unified message origin。
+            chain: 消息组件链。
+            use_markdown: 是否使用 markdown；None 表示沿用默认。
+
+        Returns:
+            底层发送结果。
+        """
+        self._ensure_group_proactive_scene(session_id)
+        return await super()._send_chain(
+            session_id,
+            chain,
+            use_markdown=use_markdown,
+        )
+
+    @staticmethod
+    def _ensure_group_proactive_scene(session_id: str) -> None:
+        """为 QQ 官方群会话补记 group scene，失败时静默跳过。"""
+        try:
+            parts = str(session_id or "").split(":", 2)
+            if len(parts) != 3 or parts[1] != "GroupMessage":
+                return
+            context = getattr(StarTools, "_context", None)
+            if context is None:
+                return
+            for platform in context.platform_manager.platform_insts:
+                meta = platform.meta() if hasattr(platform, "meta") else None
+                if meta is None or str(getattr(meta, "id", "")) != parts[0]:
+                    continue
+                remember = getattr(platform, "remember_session_scene", None)
+                if callable(remember):
+                    scene_map = getattr(platform, "_session_scene", None)
+                    session_key = parts[2].rsplit("_", 1)[-1]
+                    existing_scene = (
+                        scene_map.get(session_key)
+                        if isinstance(scene_map, dict)
+                        else None
+                    )
+                    if existing_scene and existing_scene != "group":
+                        return
+                    if existing_scene != "group":
+                        logger.info(
+                            "QQ 官方群会话未缓存 group scene，已补标记: session=%s",
+                            session_key,
+                        )
+                    remember(session_key, "group")
+                return
+        except Exception as exc:  # noqa: BLE001 - 标记失败不应阻断发送
+            logger.debug("QQ 官方群 scene 补标记失败: session=%s, err=%s", session_id, exc)
 
     async def send_to_user(
         self,

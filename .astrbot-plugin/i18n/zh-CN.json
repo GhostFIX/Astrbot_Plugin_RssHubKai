@@ -1,0 +1,8 @@
+{
+  "views": {
+    "dashboard": {
+      "title": "RSS 订阅管理",
+      "description": "管理 Feed 源、订阅、推送历史与默认订阅设置。"
+    }
+  }
+}

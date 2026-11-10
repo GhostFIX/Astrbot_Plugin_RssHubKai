@@ -1,0 +1,27 @@
+{
+  "$meta": {
+    "schema_version": 1,
+    "name": "GhostFIX AstrBot Plugins",
+    "version": "1.0.0",
+    "homepage": "https://github.com/GhostFIX/Astrbot_Plugin_RssHubKai",
+    "repository": "https://github.com/GhostFIX/Astrbot_Plugin_RssHubKai",
+    "description": "GhostFIX 的 AstrBot 插件源"
+  },
+  "GhostFIX/astrbot_plugin_rsshub_kai": {
+    "author": "GhostFIX",
+    "name": "astrbot_plugin_rsshub_kai",
+    "display_name": "RSSHub Kai",
+    "version": "1.0.0",
+    "repo": "https://github.com/GhostFIX/Astrbot_Plugin_RssHubKai",
+    "desc": "多平台 RSS 订阅推送插件，WebUI 管理订阅源与订阅，全程不调用 LLM。",
+    "short_desc": "RSS 订阅推送，纯 WebUI 管理，无 LLM。",
+    "logo": "https://raw.githubusercontent.com/GhostFIX/Astrbot_Plugin_RssHubKai/main/logo.png",
+    "tags": [
+      "RSS",
+      "订阅",
+      "推送"
+    ],
+    "category": "news",
+    "astrbot_version": ">=4.24.2"
+  }
+}

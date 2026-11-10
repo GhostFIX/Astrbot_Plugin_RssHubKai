@@ -1,0 +1,19 @@
+name: astrbot_plugin_rsshub_kai
+display_name: RSSHub Kai
+short_desc: RSS 订阅推送插件，WebUI 管理订阅源与订阅，全程不调用 LLM。
+desc: |
+  多平台 RSS/Atom/JSON Feed 订阅推送插件，基于 FlanChanXwO 的 astrbot_plugin_rsshub 改造。
+
+  - 在 AstrBot WebUI 中直接增删改查订阅源与订阅，支持启停、测试推送和推送历史。
+  - 移除内容处理器与全部 LLM 调用，推送链路完全本地执行。
+  - 移除用户体系与 RSSHub Routes 知识库，所有订阅统一归属 webui 单一用户。
+  - 保留富媒体解析、平台差异化发送、失败重试与订阅导入导出后端。
+
+version: 1.0.0
+author: GhostFIX
+repo: https://github.com/GhostFIX/Astrbot_Plugin_RssHubKai
+astrbot_version: ">=4.24.2"
+tags:
+  - RSS
+  - 订阅
+  - 推送

@@ -57,6 +57,10 @@ async def test_fresh_install_creates_webui_and_accepts_rows(tmp_path, monkeypatc
     assert history.id is not None
     assert await sub_repo.get_by_id(sub.id) is not None
 
+    await sub_repo.update_options(sub.id, "webui", state=0)
+    dashboard_subs = await sub_repo.list_for_dashboard()
+    assert [item.id for item in dashboard_subs] == [sub.id]
+
     async with db.get_session() as session:
         result = await session.execute(text("SELECT id FROM rsshub_user"))
         assert [row[0] for row in result.fetchall()] == ["webui"]

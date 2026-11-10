@@ -92,12 +92,6 @@ class SubscriptionRepositoryImpl:
             stmt = select(SubORM).join(
                 FeedORM, FeedORM.id == SubORM.feed_id, isouter=True
             )
-            has_filters = any(
-                values for values in (user_ids, feed_ids, feed_links, sub_ids, keywords)
-            )
-
-            if not has_filters:
-                stmt = stmt.where(SubORM.state == 1)
 
             if user_ids:
                 stmt = stmt.where(SubORM.user_id.in_(user_ids))

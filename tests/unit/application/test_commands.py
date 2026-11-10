@@ -74,6 +74,54 @@ class TestSubscribeFeedCommand:
         sub_repo.save.assert_awaited_once()
 
     @pytest.mark.asyncio
+    async def test_subscribe_infers_platform_from_target_session(self):
+        """未填写平台时从 unified_msg_origin 前缀推断。"""
+        from astrbot_plugin_rsshub.src.application.commands.subscribe_feed_cmd import (
+            SubscribeFeedCommand,
+        )
+        from astrbot_plugin_rsshub.src.domain.entities.feed import Feed
+
+        fetcher = AsyncMock()
+        fetcher.fetch.return_value = MagicMock(
+            error=None,
+            rss_d=MagicMock(feed={"title": "Test Feed"}),
+        )
+        fetcher.close = AsyncMock()
+
+        feed_repo = MagicMock()
+        feed_repo.get_by_link = AsyncMock(return_value=None)
+        feed_repo.save = AsyncMock(
+            return_value=Feed(
+                id=1, link="https://example.com/rss.xml", title="Test Feed"
+            )
+        )
+        sub_repo = MagicMock()
+        sub_repo.get_by_user_feed_session = AsyncMock(return_value=None)
+        saved = {}
+
+        async def _save(subscription):
+            subscription.id = 1
+            saved["subscription"] = subscription
+            return subscription
+
+        sub_repo.save.side_effect = _save
+
+        cmd = SubscribeFeedCommand(
+            subscription_repo=sub_repo,
+            feed_repo=feed_repo,
+            fetcher_factory=MagicMock(return_value=fetcher),
+        )
+        result = await cmd.execute(
+            url="https://example.com/rss.xml",
+            user_id="webui",
+            target_session="aiocqhttp:FriendMessage:12345",
+            platform_name=None,
+        )
+
+        assert result.success is True
+        assert saved["subscription"].platform_name == "aiocqhttp"
+
+    @pytest.mark.asyncio
     async def test_subscribe_existing_feed(self):
         """测试订阅已存在的 Feed"""
         from astrbot_plugin_rsshub.src.application.commands.subscribe_feed_cmd import (

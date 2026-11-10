@@ -9,6 +9,7 @@ from ...domain.repositories.feed_repository import FeedRepository
 from ...domain.repositories.subscription_repository import SubscriptionRepository
 from ...domain.repositories.user_repository import UserRepository
 from ...domain.value_objects.feed_url import FeedUrl
+from ...shared.platforms import resolve_platform_name
 from ...infrastructure.config import FeedFetchSettings, validate_interval_value
 from ...infrastructure.utils import get_logger
 from ..dto.result_dto import CommandResult
@@ -201,7 +202,7 @@ class SubscribeFeedCommand:
             user_id=user_id,
             feed_id=feed.id,
             target_session=target_session,
-            platform_name=platform_name,
+            platform_name=resolve_platform_name(target_session, platform_name) or None,
         )
         subscription = await self._subscription_repo.save(subscription)
 

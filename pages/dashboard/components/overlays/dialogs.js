@@ -33,8 +33,8 @@ export const dialogsTemplate = String.raw`
         </datalist>
       </div>
       <div class="form-group">
-        <label>平台（可选）</label>
-        <div class="input-wrapper"><input type="text" v-model="subCreateForm.platform_name" placeholder="aiocqhttp / telegram / qq_official" /></div>
+        <label>平台（留空自动推断）</label>
+        <div class="input-wrapper"><input type="text" v-model="subCreateForm.platform_name" placeholder="留空则按目标会话前缀推断" /></div>
       </div>
       <div class="form-group">
         <label>标题（可选）</label>

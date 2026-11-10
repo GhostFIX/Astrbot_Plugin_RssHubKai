@@ -30,6 +30,10 @@ export const mainPanelTemplate = String.raw`
           <div class="input-wrapper"><input type="text" v-model="editForm.target_session" /></div>
         </div>
         <div class="form-group">
+          <label>平台（留空自动推断）</label>
+          <div class="input-wrapper"><input type="text" v-model="editForm.platform_name" placeholder="aiocqhttp / telegram / qq_official" /></div>
+        </div>
+        <div class="form-group">
           <label>刷新间隔（分钟）</label>
           <div class="inherit-control">
             <select class="select-input" v-model="editForm.interval_control.mode">

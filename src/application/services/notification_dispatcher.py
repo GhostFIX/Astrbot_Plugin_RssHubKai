@@ -41,6 +41,7 @@ from ...shared.constants import (
     SEND_MODE_LINK_ONLY,
     STYLE_ORIGINAL,
 )
+from ...shared.platforms import resolve_platform_name
 from ..ports import MessageContext, MessageSenderProvider, SendRequest
 from .entry_context import EntryContentContext
 from .session_push_queue import PushJob, SessionPushQueue
@@ -274,7 +275,10 @@ class NotificationDispatcher:
     def _target_from_subscription(subscription) -> SendTarget:
         return SendTarget(
             user_id=subscription.user_id,
-            platform_name=subscription.platform_name,
+            platform_name=resolve_platform_name(
+                subscription.target_session, subscription.platform_name
+            )
+            or None,
             target_session=subscription.target_session,
             sub_id=subscription.id,
         )
@@ -485,7 +489,10 @@ class NotificationDispatcher:
     ) -> tuple[str, str, int, str, tuple[tuple[str, str], ...]]:
         return (
             str(prepared.subscription.target_session or ""),
-            str(prepared.subscription.platform_name or ""),
+            resolve_platform_name(
+                prepared.subscription.target_session,
+                prepared.subscription.platform_name,
+            ),
             int(prepared.effective_send_mode),
             str(prepared.effective_content or ""),
             tuple(
@@ -530,7 +537,10 @@ class NotificationDispatcher:
             entry_guid=entry_guid,
             feed_title=feed_title,
             feed_link=feed_link,
-            platform_name=subscription.platform_name,
+            platform_name=resolve_platform_name(
+                subscription.target_session, subscription.platform_name
+            )
+            or None,
             target_session=subscription.target_session,
             status="skipped",
             retry_count=0,
@@ -841,7 +851,10 @@ class NotificationDispatcher:
                         entry_guid=entry_guid,
                         feed_title=feed_title,
                         feed_link=feed_link,
-                        platform_name=sub.platform_name,
+                        platform_name=resolve_platform_name(
+                            sub.target_session, sub.platform_name
+                        )
+                        or None,
                         target_session=sub.target_session,
                         status="pending",
                         retry_count=0,

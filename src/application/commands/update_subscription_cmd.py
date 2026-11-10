@@ -6,6 +6,7 @@
 
 from ...domain.repositories.subscription_repository import SubscriptionRepository
 from ...infrastructure.config import validate_interval_value
+from ...shared.platforms import resolve_platform_name
 from ..dto.result_dto import CommandResult
 from ..dto.subscription_dto import SubscriptionDTO
 
@@ -72,6 +73,12 @@ class UpdateSubscriptionCommand:
                     return CommandResult(success=False, message=str(exc))
                 continue
             normalized_options[key] = value
+
+        if "target_session" in normalized_options:
+            normalized_options["platform_name"] = resolve_platform_name(
+                normalized_options.get("target_session"),
+                normalized_options.get("platform_name"),
+            )
 
         subscription = await self._subscription_repo.update_options(
             sub_id, user_id, **normalized_options

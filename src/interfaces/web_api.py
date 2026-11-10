@@ -10,6 +10,7 @@ import asyncio
 import json
 import re
 import shutil
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -42,6 +43,7 @@ from ..domain.repositories.push_history_repository import PushHistoryRepository
 from ..domain.repositories.subscription_repository import SubscriptionRepository
 from ..domain.value_objects.feed_url import FeedUrl
 from ..shared.constants import INHERIT_VALUE
+from ..shared.platforms import resolve_platform_name
 from ..infrastructure.config import (
     RsshubPluginConfig,
     build_application_settings,
@@ -94,6 +96,7 @@ class WebApiHandler:
         notification_dispatcher: NotificationDispatcher | None = None,
         config: RsshubPluginConfig | None = None,
         raw_config: AstrBotConfig | None = None,
+        platform_name_resolver: Callable[[str], str] | None = None,
     ):
         self._sse_clients: list[asyncio.Queue] = []
         self._change_counter: int = 0
@@ -115,6 +118,17 @@ class WebApiHandler:
         self._notification_dispatcher = notification_dispatcher
         self._config = config
         self._raw_config = raw_config
+        self._platform_name_resolver = platform_name_resolver
+
+    def _resolve_platform_name(
+        self, target_session: str | None, platform_name: str | None = None
+    ) -> str:
+        """Resolve the platform type from an explicit value or session prefix."""
+        return resolve_platform_name(
+            target_session,
+            platform_name,
+            resolver=self._platform_name_resolver,
+        )
 
     def register_all(self, context: Context) -> None:
         """注册所有 API 端点到 AstrBot"""
@@ -728,7 +742,10 @@ class WebApiHandler:
         if not target_session:
             return jsonify({"ok": False, "error": "target_session 不能为空"})
 
-        platform_name = str(data.get("platform_name") or "").strip() or None
+        platform_name = (
+            self._resolve_platform_name(target_session, data.get("platform_name"))
+            or None
+        )
 
         result = await self._subscribe_cmd.execute(
             url=url,
@@ -789,6 +806,17 @@ class WebApiHandler:
             return jsonify({"ok": False, "error": "sub_id 不能为空"})
         if not isinstance(options, dict):
             return jsonify({"ok": False, "error": "options 必须是对象"})
+
+        if not str(options.get("platform_name") or "").strip():
+            current = await self._sub_repo.get_by_id(int(sub_id))
+            session = options.get("target_session") or (
+                current.target_session if current else ""
+            )
+            resolved_platform = self._resolve_platform_name(
+                session, options.get("platform_name")
+            )
+            if resolved_platform:
+                options["platform_name"] = resolved_platform
 
         result = await self._update_sub_cmd.execute(
             sub_id=int(sub_id),
@@ -1068,10 +1096,12 @@ class WebApiHandler:
             target_session = str(subscription.target_session or "").strip()
         if not platform_name:
             platform_name = str(subscription.platform_name or "").strip()
+        if not platform_name:
+            platform_name = self._resolve_platform_name(target_session)
         if not target_session:
             return jsonify({"ok": False, "error": "订阅未配置推送目标会话"})
         if not platform_name:
-            return jsonify({"ok": False, "error": "订阅未配置平台，无法测试推送"})
+            return jsonify({"ok": False, "error": "无法从目标会话推断平台，无法测试推送"})
 
         result = await self._test_sub_cmd.execute_target(
             target=str(sub_id),
@@ -1219,8 +1249,7 @@ class WebApiHandler:
 
     async def handle_stats(self):
         """获取插件统计概览"""
-        subs = await self._sub_repo.get_all_active()
-        all_subs = subs
+        all_subs = await self._sub_repo.list_for_dashboard()
 
         total_active = sum(1 for s in all_subs if s.state == 1)
         feed_ids = {s.feed_id for s in all_subs if s.feed_id}

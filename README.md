@@ -74,7 +74,7 @@
   ```
 
   输入框会从现有订阅补全可用的目标会话；
-- **平台**（可选）：`aiocqhttp`、`telegram`、`qq_official` 等，留空时按目标会话推断；
+- **平台**（可选）：`aiocqhttp`、`telegram`、`qq_official` 等；留空时自动从目标会话前缀推断，自定义平台实例名会通过 AstrBot 平台管理器映射到适配器类型；
 - **标题**（可选）：留空使用 Feed 标题。
 
 ### 启用 / 停用
@@ -109,6 +109,12 @@
 ```bash
 python -m pip install -r requirements-dev.txt
 python -m pytest tests/unit -q
+```
+
+推送前先确认仓库包含完整目录（AstrBot 直接使用仓库归档，缺少 `src/` 会安装失败）：
+
+```bash
+python scripts/verify_repo_layout.py
 ```
 
 测试使用 `tests/conftest.py` 中的 AstrBot mock，不需要完整 AstrBot 运行时。

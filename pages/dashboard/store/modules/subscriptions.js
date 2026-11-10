@@ -251,6 +251,9 @@ export const subscriptionsModule = {
       if (this.editForm.target_session !== undefined) {
         options.target_session = this.editForm.target_session;
       }
+      if (this.editForm.platform_name !== undefined) {
+        options.platform_name = this.editForm.platform_name;
+      }
       options.length_limit = inheritedNumberToPayload(this.editForm.length_limit_control);
       options.state = this.editForm.state_ ? 1 : 0;
       options.notify = this.editForm.notify;

@@ -476,6 +476,40 @@ async def _start_scheduler(
     return scheduler
 
 
+def _build_platform_name_resolver(context: Context):
+    """Map a session platform id to the adapter type used by sender factories.
+
+    AstrBot's ``unified_msg_origin`` starts with the configured platform
+    instance id. Most installations use the adapter name directly, but users
+    may rename the instance, so resolve it through ``platform_manager``.
+
+    Args:
+        context: AstrBot plugin context.
+
+    Returns:
+        Callable accepting a platform id and returning the adapter type name.
+    """
+
+    def _resolve(prefix: str) -> str:
+        if not prefix:
+            return ""
+        try:
+            for inst in context.platform_manager.get_insts():
+                meta = inst.meta() if hasattr(inst, "meta") else None
+                if meta is None:
+                    continue
+                if prefix in {
+                    str(getattr(meta, "id", "") or ""),
+                    str(getattr(meta, "name", "") or ""),
+                }:
+                    return str(getattr(meta, "name", "") or prefix)
+        except Exception as exc:
+            logger.debug("解析平台类型失败: prefix=%s, err=%s", prefix, exc)
+        return prefix
+
+    return _resolve
+
+
 def _register_web_api(
     context: Context,
     config: RsshubPluginConfig,
@@ -500,6 +534,7 @@ def _register_web_api(
         notification_dispatcher=deps["notification_dispatcher"],
         config=config,
         raw_config=raw_config,
+        platform_name_resolver=_build_platform_name_resolver(context),
     )
     web_api.register_all(context)
     logger.info("Web API 已注册")

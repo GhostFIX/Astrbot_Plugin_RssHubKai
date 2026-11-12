@@ -647,7 +647,8 @@ async def test_poll_feed_dispatch_preserves_video_media_without_text_placeholder
 
 
 @pytest.mark.asyncio
-async def test_poll_feed_group_limits_dispatch_to_selected_subscriptions():
+async def test_poll_feed_group_dispatches_to_all_active_subscribers():
+    """Due ids trigger the poll, but every active subscriber receives new entries."""
     feed = Feed(id=1, link="https://example.com/rss.xml")
     entries = [
         EntryParsed(guid="guid-1", title="One", link="https://example.com/1"),
@@ -687,7 +688,7 @@ async def test_poll_feed_group_limits_dispatch_to_selected_subscriptions():
     assert result.dispatched == 1
     dispatcher.dispatch_to_feed_subscribers.assert_awaited_once()
     call_kwargs = dispatcher.dispatch_to_feed_subscribers.await_args.kwargs
-    assert call_kwargs["subscription_ids"] == [10, 20]
+    assert call_kwargs["subscription_ids"] is None
 
 
 @pytest.mark.asyncio

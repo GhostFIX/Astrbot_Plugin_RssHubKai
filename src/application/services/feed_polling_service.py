@@ -362,11 +362,32 @@ class FeedPollingService:
         notify_new_entries: bool = True,
         verbose: bool = False,
     ) -> FeedPollingResult:
-        """Poll one feed and dispatch only to the selected subscriptions."""
+        """Poll one feed and push new entries to every active subscriber.
+
+        ``subscription_ids`` only decides *when* the feed is polled (the due
+        subscriptions). Entry hashes are tracked per feed, so dispatching only
+        to the due subset would permanently hide an entry from subscribers
+        whose interval had not elapsed yet. Once a feed is polled, every active
+        subscription of that feed must receive the new entries.
+
+        Args:
+            feed_id: Feed to poll.
+            subscription_ids: Due subscription ids that triggered this poll.
+            notify_new_entries: Whether to dispatch newly detected entries.
+            verbose: Enable verbose fetch logging.
+
+        Returns:
+            Polling result.
+        """
+        logger.debug(
+            "poll_feed_group: feed=%s due_subs=%s -> dispatch to all active subscribers",
+            feed_id,
+            subscription_ids,
+        )
         return await self.poll_feed(
             feed_id,
             notify_new_entries=notify_new_entries,
-            subscription_ids=list(dict.fromkeys(subscription_ids)),
+            subscription_ids=None,
             verbose=verbose,
         )
 
